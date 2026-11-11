@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>좋아하는 것 묻고 답하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Gowun+Dodum&display=swap">
+<style>
+/* 레이아웃: 세로 흐름 3단계(듣기 → 고르고 말하기 → 녹음·제출). 주제별 색: 색깔=노랑, 스포츠=보라, 과일=초록(교과서 원형 배경) */
+:root{
+  --bg:#f6f9f9; --surface:#ffffff; --ink:#23282a; --muted:#6a7476; --line:#dde7e8;
+  --accent:#1f9aa6; --accent-soft:#dff1f3; --hl:#d9536b;
+  --t0:#f2b84b; --t0-soft:#fdf1d8; --t1:#a77bc4; --t1-soft:#f2e8f8; --t2:#6fb56a; --t2-soft:#e6f4e4;
+  --ok:#2f8a5b; --warn:#d23a3a;
+  --f-jp:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Noto Sans JP",sans-serif;
+  --f-ko:"Gowun Dodum","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#161b1c; --surface:#1f2627; --ink:#eef3f3; --muted:#a3afb1; --line:#33403f;
+  --accent:#53c4cf; --accent-soft:#1c3437; --hl:#f07b90;
+  --t0:#f2c46b; --t0-soft:#3a3120; --t1:#c49ddc; --t1-soft:#33283b; --t2:#8fcf8a; --t2-soft:#22341f;
+  --ok:#5cc28d; --warn:#ff6b6b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161b1c; --surface:#1f2627; --ink:#eef3f3; --muted:#a3afb1; --line:#33403f;
+  --accent:#53c4cf; --accent-soft:#1c3437; --hl:#f07b90;
+  --t0:#f2c46b; --t0-soft:#3a3120; --t1:#c49ddc; --t1-soft:#33283b; --t2:#8fcf8a; --t2-soft:#22341f;
+  --ok:#5cc28d; --warn:#ff6b6b; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-ko);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(40px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-size:.8rem;letter-spacing:.08em;color:var(--accent);font-weight:700}
+h1{font-family:var(--f-jp);font-weight:800;font-size:1.7rem;line-height:1.3;margin:0;text-wrap:balance}
+.lead{margin:0;color:var(--muted)}
+section{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 20px;display:flex;flex-direction:column;gap:16px}
+.step{display:flex;align-items:center;gap:10px}
+.step b{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--f-jp);font-size:1rem;flex:none}
+h2{margin:0;font-size:1.2rem;text-wrap:balance}
+h3{margin:0;font-size:1.05rem}
+.hint{margin:0;color:var(--muted);font-size:.95rem}
+
+/* 주제 탭 */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tab{appearance:none;font:inherit;cursor:pointer;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;line-height:1.25;min-height:52px}
+.tab .jp{font-family:var(--f-jp);font-weight:700;font-size:1.1rem}
+.tab .ko{font-size:.78rem;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--tc);background:var(--tc-soft)}
+
+/* 단어 카드 */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{appearance:none;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:12px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font:inherit;min-width:0}
+.card .ic{width:40px;height:40px}
+.card .jp{font-family:var(--f-jp);font-weight:700;font-size:1.3rem;line-height:1.3}
+.card .ko{font-size:.85rem;color:var(--muted)}
+.card[aria-pressed="true"]{border-color:var(--tc);background:var(--tc-soft)}
+.t0{--tc:var(--t0);--tc-soft:var(--t0-soft)} .t1{--tc:var(--t1);--tc-soft:var(--t1-soft)} .t2{--tc:var(--t2);--tc-soft:var(--t2-soft)}
+
+/* 대화 */
+.dialog{display:flex;flex-direction:column;gap:10px}
+.line{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;border-radius:14px;padding:10px 12px;background:var(--accent-soft);transition:box-shadow .2s}
+.line.speaking{box-shadow:0 0 0 3px var(--accent)}
+.who{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--surface);font-weight:700;font-family:var(--f-jp)}
+.txt{min-width:0}
+.jpline{font-family:var(--f-jp);font-weight:500;font-size:1.3rem;line-height:1.5}
+.jpline .sub{color:var(--hl);font-weight:800}
+.jpline .nm{font-weight:800}
+.koline{font-size:.9rem;color:var(--muted)}
+.pron{font-size:.9rem;color:var(--accent)}
+.line.hide-jp .jpline{filter:blur(7px);user-select:none}
+.ibtn{appearance:none;border:none;background:var(--surface);color:var(--ink);width:44px;height:44px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.ibtn svg{width:20px;height:20px}
+
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{appearance:none;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;padding:9px 14px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:700}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tip{border-left:4px solid var(--accent);background:var(--bg);padding:10px 14px;border-radius:0 10px 10px 0;font-size:.95rem}
+.tip strong{color:var(--accent)}
+.notice{font-size:.9rem;color:var(--warn)}
+
+/* 내 선택 */
+.picks{display:flex;flex-direction:column;gap:12px}
+.pick{display:grid;grid-template-columns:92px 1fr;gap:10px;align-items:center}
+.pick .lbl{font-family:var(--f-jp);font-weight:700;line-height:1.25}
+.pick .lbl small{display:block;font-family:var(--f-ko);font-weight:400;font-size:.78rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{appearance:none;font:inherit;font-family:var(--f-jp);font-size:1.05rem;cursor:pointer;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 14px;min-height:42px}
+.chip[aria-pressed="true"]{border-color:var(--tc);background:var(--tc-soft);font-weight:700}
+
+.script{list-style:none;margin:0;padding:14px 16px;border-radius:14px;background:var(--bg);display:flex;flex-direction:column;gap:6px}
+.script li{display:grid;grid-template-columns:28px 1fr;gap:8px;font-family:var(--f-jp);font-size:1.15rem}
+.script li > span:first-child{color:var(--muted);font-family:var(--f-ko);font-size:.9rem;padding-top:4px}
+.script li .sub{color:var(--hl);font-weight:700}
+.status:empty{display:none}
+.script .gap{height:6px}
+.status{font-size:.95rem;color:var(--muted)}
+.checks{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.checks label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.checks input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--accent)}
+.done{color:var(--ok);font-weight:700}
+.how{margin:0}
+@media (max-width:520px){.jpline{font-size:1.12rem}h1{font-size:1.45rem}.pick{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">일본어 · 읽기와 말하기</span>
+  <h1>좋아하는 것 묻고 답하기</h1>
+  <p class="lead">관심을 나타내는 표현을 듣고 따라 말한 뒤, 직접 녹음한 파일을 제출합니다.</p>
+</header>
+
+<section aria-labelledby="s1">
+  <div class="step"><b>1</b><h2 id="s1">주제와 단어를 바꿔 가며 듣고 따라 말하기</h2></div>
+  <p class="hint">주제를 고르고 단어 카드를 누르면 문장이 바뀝니다. ▶를 눌러 한 줄씩 듣고, 소리 내어 따라 말해 보세요.</p>
+
+  <div class="tabs" role="tablist" aria-label="주제" id="tabs"></div>
+  <div class="cards" role="group" aria-label="바꿔 넣을 단어" id="cards"></div>
+
+  <div class="dialog">
+    <div class="line" id="lineA">
+      <span class="who">A</span>
+      <div class="txt">
+        <div class="jpline"><span class="nm">パク</span>さんは どんな <span class="sub" id="aCat">いろ</span>が すきですか。</div>
+        <div class="koline" id="koA">박 씨는 어떤 색을 좋아해요?</div>
+        <div class="pron" id="prA" hidden></div>
+      </div>
+      <button class="ibtn" data-say="A" aria-label="A 문장 듣기"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+    </div>
+    <div class="line" id="lineB">
+      <span class="who">B</span>
+      <div class="txt">
+        <div class="jpline"><span class="sub" id="bItem">あお</span>が すきです。</div>
+        <div class="koline" id="koB">파란색을 좋아해요.</div>
+        <div class="pron" id="prB" hidden></div>
+      </div>
+      <button class="ibtn" data-say="B" aria-label="B 문장 듣기"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn primary" id="playPair">▶ 대화 듣기</button>
+    <button class="btn" id="playAll">▶ 이 주제 전부 듣기</button>
+    <button class="btn" id="slow" aria-pressed="false">천천히</button>
+    <button class="btn" id="pronBtn" aria-pressed="false">한글 발음 보기</button>
+  </div>
+  <p class="notice" id="ttsNote" hidden>이 기기에서는 일본어 음성이 나오지 않아요. 선생님이 들려주는 교과서 음원으로 들어 주세요.</p>
+
+  <div class="tip"><strong>발음 포인트</strong> すき의 <b>す</b>는 거의 들리지 않게 가볍게 「스키」, です·ですか의 <b>す</b>도 약하게 읽어요. 묻는 문장 끝 <b>か</b>는 올리고, 대답 <b>です</b>는 내려 줍니다. サッカー의 작은 っ는 한 박자 쉬고, ー와 やきゅう의 <b>う</b>는 길게 끌어요.</div>
+</section>
+
+<section aria-labelledby="s2">
+  <div class="step"><b>2</b><h2 id="s2">내가 좋아하는 것 고르고 혼자 말해 보기</h2></div>
+  <p class="hint">주제마다 내가 좋아하는 것을 하나씩 고르세요. 고른 단어가 3단계 녹음 대본에 들어갑니다.</p>
+  <div class="picks" id="picks"></div>
+  <p class="hint">문장을 흐리게 가리고 한국어 뜻만 보며 말해 보세요. 세 주제 모두 막힘없이 말할 수 있으면 녹음으로 넘어갑니다.</p>
+  <div class="row">
+    <button class="btn" id="hideA" aria-pressed="false">A 문장 가리기</button>
+    <button class="btn" id="hideB" aria-pressed="false">B 문장 가리기</button>
+  </div>
+</section>
+
+<section aria-labelledby="s3">
+  <div class="step"><b>3</b><h2 id="s3">녹음하고 파일 제출하기</h2></div>
+  <p class="hint">태블릿의 <b>음성 녹음</b> 앱을 열고, 아래 대본을 처음부터 끝까지 <b>A와 B 모두</b> 혼자 읽어 녹음합니다. 빨간 글자는 2단계에서 내가 고른 단어예요.</p>
+  <ol class="script" id="script"></ol>
+
+  <h3>제출 전 확인</h3>
+  <ul class="checks">
+    <li><label><input type="checkbox" class="ck" id="ck1">いろ · スポーツ · くだもの 세 대화를 모두 녹음했다</label></li>
+    <li><label><input type="checkbox" class="ck" id="ck2">묻는 문장 끝 か는 올리고, 대답 끝 です는 내려 읽었다</label></li>
+    <li><label><input type="checkbox" class="ck" id="ck3">다시 들어 보고 목소리가 잘 들리는지 확인했다</label></li>
+  </ul>
+  <p class="status" id="checkMsg" aria-live="polite"></p>
+
+  <h3>제출 방법</h3>
+  <p class="how">패들렛에서 <b>내 이름 칸</b>의 ＋를 누르고 녹음 파일을 올립니다.</p>
+</section>
+
+</div>
+
+<script>
+const IC={
+  paint:c=>`<svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5C10 5 4 12 4 20s6 15 14 15c3 0 3-3 2-5s0-4 3-4h5c6 0 8-4 8-8C36 11 29 5 20 5z" fill="#d9b48c"/><circle cx="12" cy="16" r="2.4" fill="#fff8ee"/><path d="M17 22c3-6 9-4 7 1s-6 6-8 4" fill="${c}" stroke="${c==='#ffffff'?'#b9c4c6':'none'}" stroke-width="1.2"/><path d="M25 14l7-7" stroke="#8a8f91" stroke-width="3" stroke-linecap="round"/></svg>`,
+  basket:`<svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15" fill="#e8873a"/><g fill="none" stroke="#5a2d10" stroke-width="1.4"><path d="M5 20h30M20 5v30"/><path d="M9.5 9.5c5 5 5 16 0 21M30.5 9.5c-5 5-5 16 0 21"/></g></svg>`,
+  soccer:`<svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15" fill="#fff" stroke="#2b2b2b" stroke-width="1.4"/><path d="M20 13l6 4.5-2.3 7h-7.4l-2.3-7z" fill="#2b2b2b"/><g stroke="#2b2b2b" stroke-width="1.4"><path d="M20 13V5.5M26 17.5l7-2.5M23.7 24.5l4.5 6M16.3 24.5l-4.5 6M14 17.5l-7-2.5"/></g></svg>`,
+  baseball:`<svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15" fill="#fff" stroke="#9aa3a5" stroke-width="1.2"/><g fill="none" stroke="#d23a3a" stroke-width="1.6" stroke-dasharray="2 2"><path d="M11 8c4 7 4 17 0 24"/><path d="M29 8c-4 7-4 17 0 24"/></g></svg>`,
+  straw:`<svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 36C10 30 6 21 9 15c3-5 19-5 22 0 3 6-1 15-11 21z" fill="#e2394a"/><path d="M12 11c3 2 13 2 16 0l-3-4-5 3-5-3z" fill="#4c9a3f"/><g fill="#ffe08a"><circle cx="15" cy="19" r="1"/><circle cx="21" cy="18" r="1"/><circle cx="26" cy="20" r="1"/><circle cx="18" cy="25" r="1"/><circle cx="24" cy="26" r="1"/><circle cx="20" cy="31" r="1"/></g></svg>`,
+  apple:`<svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 12c-4-3-14-2-14 9 0 9 6 15 10 15 2 0 3-1 4-1s2 1 4 1c4 0 10-6 10-15 0-11-10-12-14-9z" fill="#d93a3a"/><path d="M20 12c0-3 1-6 3-8" stroke="#6b4a2a" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M22 9c3-3 7-3 8-1-3 3-6 3-8 1z" fill="#5fa547"/></svg>`,
+  mikan:`<svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="22" r="14" fill="#f39a1f"/><circle cx="20" cy="22" r="14" fill="none" stroke="#d27a0c" stroke-width="1"/><path d="M18 9c2-2 6-2 8 0-2 2-6 2-8 0z" fill="#5fa547"/><circle cx="20" cy="9.5" r="1.6" fill="#4c7a2f"/></svg>`
+};
+const TOPICS=[
+  {cat:"いろ",catKo:"색",catPr:"이로",objKo:"색을",items:[
+    {jp:"あお",ko:"파란색",pr:"아오",ic:IC.paint("#2f63c8")},
+    {jp:"あか",ko:"빨간색",pr:"아카",ic:IC.paint("#d8333a")},
+    {jp:"しろ",ko:"흰색",pr:"시로",ic:IC.paint("#ffffff")}]},
+  {cat:"スポーツ",catKo:"스포츠",catPr:"스포-츠",objKo:"스포츠를",items:[
+    {jp:"バスケ",ko:"농구",pr:"바스케",ic:IC.basket},
+    {jp:"サッカー",ko:"축구",pr:"삭카-",ic:IC.soccer},
+    {jp:"やきゅう",ko:"야구",pr:"야큐-",ic:IC.baseball}]},
+  {cat:"くだもの",catKo:"과일",catPr:"쿠다모노",objKo:"과일을",items:[
+    {jp:"いちご",ko:"딸기",pr:"이치고",ic:IC.straw},
+    {jp:"りんご",ko:"사과",pr:"링고",ic:IC.apple},
+    {jp:"みかん",ko:"귤",pr:"미캉",ic:IC.mikan}]}
+];
+const josa=w=>{const c=w.charCodeAt(w.length-1)-0xAC00;return (c>=0&&c%28)?"을":"를"};
+let t=0,it=0,rate=1;
+const my=[0,0,0];
+const $=s=>document.querySelector(s);
+
+function aJP(ti){return `パクさんは どんな ${TOPICS[ti].cat}が すきですか。`}
+function bJP(ti,ii){return `${TOPICS[ti].items[ii].jp}が すきです。`}
+
+function render(){
+  const T=TOPICS[t];
+  $("#tabs").innerHTML=TOPICS.map((x,i)=>`<button class="tab t${i}" role="tab" id="tab${i}" aria-selected="${i===t}" data-t="${i}"><span class="jp">${x.cat}</span><span class="ko">${x.catKo}</span></button>`).join("");
+  $("#cards").className="cards t"+t;
+  $("#cards").innerHTML=T.items.map((x,i)=>`<button class="card" id="card${i}" aria-pressed="${i===it}" data-i="${i}">${x.ic}<span class="jp">${x.jp}</span><span class="ko">${x.ko}</span></button>`).join("");
+  const I=T.items[it];
+  $("#aCat").textContent=T.cat;
+  $("#bItem").textContent=I.jp;
+  $("#koA").textContent=`박 씨는 어떤 ${T.objKo} 좋아해요?`;
+  $("#koB").textContent=`${I.ko}${josa(I.ko)} 좋아해요.`;
+  $("#prA").textContent=`파크상와 돈나 ${T.catPr}가 스키데스카.`;
+  $("#prB").textContent=`${I.pr}가 스키데스.`;
+  document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{t=+b.dataset.t;it=0;render()});
+  document.querySelectorAll(".card").forEach(b=>b.onclick=()=>{it=+b.dataset.i;render();speakSeq([["B",t,it]])});
+}
+function renderPicks(){
+  $("#picks").innerHTML=TOPICS.map((T,ti)=>`<div class="pick t${ti}"><div class="lbl">${T.cat}<small>${T.catKo}</small></div><div class="chips" role="group" aria-label="${T.catKo}">${T.items.map((x,i)=>`<button class="chip" id="pick${ti}-${i}" aria-pressed="${my[ti]===i}" data-t="${ti}" data-i="${i}">${x.jp}</button>`).join("")}</div></div>`).join("");
+  document.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{my[+b.dataset.t]=+b.dataset.i;renderPicks();renderScript()});
+}
+function renderScript(){
+  $("#script").innerHTML=TOPICS.map((T,ti)=>(ti?'<li class="gap" aria-hidden="true"></li>':"")+
+    `<li><span>A</span><span>パクさんは どんな ${T.cat}が すきですか。</span></li><li><span>B</span><span><span class="sub">${T.items[my[ti]].jp}</span>が すきです。</span></li>`).join("");
+}
+
+/* 음성(TTS) */
+const synth=window.speechSynthesis;
+let jaVoice=null;
+function pickVoice(){ if(!synth)return; const v=synth.getVoices(); jaVoice=v.find(x=>/ja[-_]JP/i.test(x.lang))||v.find(x=>/^ja/i.test(x.lang))||null }
+if(synth){pickVoice();synth.onvoiceschanged=pickVoice}else{$("#ttsNote").hidden=false}
+function clearHi(){document.querySelectorAll(".line").forEach(l=>l.classList.remove("speaking"))}
+function speakSeq(seq){
+  if(!synth){$("#ttsNote").hidden=false;return}
+  synth.cancel(); clearHi();
+  seq.forEach(([role,ti,ii],k)=>{
+    const u=new SpeechSynthesisUtterance(role==="A"?aJP(ti):bJP(ti,ii));
+    u.lang="ja-JP"; if(jaVoice)u.voice=jaVoice;
+    u.rate=rate*0.9; u.pitch=role==="A"?1.1:0.95;
+    u.onstart=()=>{ if(ti!==t||(role==="B"&&ii!==it)){t=ti; if(role==="B")it=ii; render()}
+      clearHi(); $(role==="A"?"#lineA":"#lineB").classList.add("speaking") };
+    u.onend=()=>{ if(k===seq.length-1)clearHi() };
+    synth.speak(u);
+  });
+  setTimeout(()=>{ if(!jaVoice&&synth.getVoices().length)$("#ttsNote").hidden=false },1500);
+}
+document.querySelectorAll("[data-say]").forEach(b=>b.addEventListener("click",()=>speakSeq([[b.dataset.say,t,it]])));
+$("#playPair").onclick=()=>speakSeq([["A",t,it],["B",t,it]]);
+$("#playAll").onclick=()=>speakSeq([0,1,2].flatMap(i=>[["A",t,i],["B",t,i]]));
+function toggle(btn,fn){btn.onclick=()=>{const on=btn.getAttribute("aria-pressed")!=="true";btn.setAttribute("aria-pressed",on);fn(on)}}
+toggle($("#slow"),on=>rate=on?0.7:1);
+toggle($("#pronBtn"),on=>document.querySelectorAll(".pron").forEach(p=>p.hidden=!on));
+toggle($("#hideA"),on=>$("#lineA").classList.toggle("hide-jp",on));
+toggle($("#hideB"),on=>$("#lineB").classList.toggle("hide-jp",on));
+
+document.querySelectorAll(".ck").forEach(c=>c.addEventListener("change",()=>{
+  const all=[...document.querySelectorAll(".ck")].every(x=>x.checked);
+  $("#checkMsg").innerHTML=all?'<span class="done">준비 완료! 제출해 주세요.</span>':"";
+}));
+
+render(); renderPicks(); renderScript();
+</script>
+</body>
+</html>
